@@ -1,7 +1,7 @@
 ## Interface: 40300
 ## Author: ckaotik
 ## Title: Auctionator MiniFeatures
-## Version: 1.1
+## Version: 4.3v2
 ## OptionalDeps:
 ## RequiredDeps: Auctionator
 
