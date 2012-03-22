@@ -1,0 +1,8 @@
+## Interface: 40300
+## Author: ckaotik
+## Title: Auctionator MiniFeatures
+## Version: 1.1
+## OptionalDeps:
+## RequiredDeps: Auctionator
+
+auctionator.lua
