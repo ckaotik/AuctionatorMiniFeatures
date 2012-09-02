@@ -11,7 +11,7 @@ Atr_ShowTipWithPricing = ShowTipWithPricing -- [CKAOTIK]
 
 ----------------------------------------------
 
-2) To show seller names in the auction house, change this in Auctionator.lua around line ~3647:
+2) To show seller names in the auction house, change this in Auctionator.lua around line ~3661:
 	change this old code:
 
 if (data.yours) then

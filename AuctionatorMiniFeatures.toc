@@ -5,9 +5,5 @@
 ## OptionalDeps:
 ## RequiredDeps: Auctionator
 
-## X-Curse-Project-Name: Auctionator MiniFeatures
-## X-Curse-Project-ID: auctionator-minifeatures
-## X-Curse-Repository-ID: wow/auctionator-minifeatures/mainline
-
 auctionator.lua
 data.lua
