@@ -6,16 +6,8 @@ AuctionatorMiniFeatures = addon
 -- ================================================
 --[[
 1) To add Auctionator's data to the merchant item's tooltips, add this to the end of AuctionatorHints.lua:
---[CKAOTIK] also show prices when shopping at vendors (useful for reselling limited supply items)
-hooksecurefunc(GameTooltip, "SetMerchantItem", function(tip, merchantID)
-	local itemLink = GetMerchantItemLink(merchantID)
-	local _, _, _, num = GetMerchantItemInfo(merchantID)
-	ShowTipWithPricing (tip, itemLink, num);
-	if AuctionatorMiniFeatures then
-		AuctionatorMiniFeatures:UpdateAuctionatorTooltip(tip, itemLink)
-	end
-end)
---[/CKAOTIK]
+
+Atr_ShowTipWithPricing = ShowTipWithPricing -- [CKAOTIK]
 
 ----------------------------------------------
 
@@ -146,8 +138,8 @@ function addon:UpdateAuctionatorTooltip(tip, itemLink)
 
 	-- we don't care about unsellable items
 	local itemID = tonumber( (gAtrZC.ItemIDfromLink(itemLink)) )
-	local bonding = Atr_GetBonding(itemID)
-	if bonding == 1 or bonding == 4 or bonding == 5 then return end
+	local bonding = Atr_GetBondType(itemID)
+	if not (bonding == ATR_CAN_BE_AUCTIONED or bonding == ATR_BINDTYPE_UNKNOWN)then return end
 
 	-- historyData = the price we asked for this item the last time
 	-- prevPrice = the price seen in previous scans
@@ -158,21 +150,22 @@ function addon:UpdateAuctionatorTooltip(tip, itemLink)
 	if not itemPrice then return end
 
 	local changeIndicator = ""
+	local up, down = " |TInterface\\BUTTONS\\Arrow-Up-Up:0|t", " |TInterface\\BUTTONS\\Arrow-Down-Up:0|t"
 	-- global pricing changes
 	if showGlobalPriceChanges then
 		if prevPrice and itemPrice > prevPrice then
-			changeIndicator = " |TInterface\\BUTTONS\\Arrow-Up-Up:0|t"
+			changeIndicator = changeIndicator .. up
 		elseif prevPrice and itemPrice < prevPrice then
-			changeIndicator = " |TInterface\\BUTTONS\\Arrow-Down-Up:0|t"
+			changeIndicator = changeIndicator .. down
 		end
 	end
 
 	-- player pricing changes
 	if showPlayerPriceChanges then
 		if historyData and itemPrice > historyData then
-			changeIndicator = changeIndicator .. " |TInterface\\BUTTONS\\Arrow-Up-Up:0|t"
+			changeIndicator = changeIndicator .. up
 		elseif historyData and itemPrice < historyData then
-			changeIndicator = changeIndicator .. " |TInterface\\BUTTONS\\Arrow-Down-Up:0|t"
+			changeIndicator = changeIndicator .. down
 		end
 	end
 
@@ -180,6 +173,13 @@ function addon:UpdateAuctionatorTooltip(tip, itemLink)
 end
 
 -- bunch of tooltip hooks
+hooksecurefunc(GameTooltip, "SetMerchantItem", function(tip, merchantID)
+	local itemLink = GetMerchantItemLink(merchantID)
+	local _, _, _, num = GetMerchantItemInfo(merchantID)
+	Atr_ShowTipWithPricing(tip, itemLink, num)
+	AuctionatorMiniFeatures:UpdateAuctionatorTooltip(tip, itemLink)
+end)
+
 hooksecurefunc(GameTooltip, "SetBagItem", function(tip, bag, slot)
 	local link = GetContainerItemLink(bag, slot)
 	addon:UpdateAuctionatorTooltip(tip, link)
@@ -194,7 +194,7 @@ hooksecurefunc (GameTooltip, "SetAuctionSellItem", function (tip)
 	addon:UpdateAuctionatorTooltip(tip, link)
 end)
 hooksecurefunc (GameTooltip, "SetLootItem", function (tip, slot)
-	if LootSlotIsItem(slot) then
+	if LootSlotHasItem(slot) then
 		local link, _, num = GetLootSlotLink(slot)
 		addon:UpdateAuctionatorTooltip(tip, link)
 	end

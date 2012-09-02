@@ -1,9 +1,10 @@
-## Interface: 40300
+## Interface: 50001
 ## Author: ckaotik
 ## Title: Auctionator MiniFeatures
-## Version: 4.3v2
+## Version: 5.0v1
 ## OptionalDeps:
 ## RequiredDeps: Auctionator
+
 ## X-Curse-Project-Name: Auctionator MiniFeatures
 ## X-Curse-Project-ID: auctionator-minifeatures
 ## X-Curse-Repository-ID: wow/auctionator-minifeatures/mainline
