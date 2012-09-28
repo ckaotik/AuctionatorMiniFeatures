@@ -11,7 +11,7 @@ Atr_ShowTipWithPricing = ShowTipWithPricing -- [CKAOTIK]
 
 ----------------------------------------------
 
-2) To show seller names in the auction house, change this in Auctionator.lua around line ~3661:
+2) To show seller names in the auction house, change this in Auctionator.lua around line ~3669:
 	change this old code:
 
 if (data.yours) then
@@ -35,7 +35,7 @@ end
 entrytext = entrytext .. spacing .. (data.owner or "")
 --[/CKAOTIK]
 
-3) change this in AuctionatorScan.lua around line ~986:
+3) change this in AuctionatorScan.lua around line ~978:
 	change this old code:
 
 data.yours			= ownerCode == "y";
@@ -47,7 +47,7 @@ data.owner			= sd.owner --[CKAOTIK]
 
 ]]
 
-
+-- "_"..sd.stackSize.."_"..sd.buyoutPrice.."_"..ownerCode..dataType
 local showGlobalPriceChanges = true
 local showPlayerPriceChanges = true
 
@@ -66,18 +66,18 @@ function addon:Auctionator_GetAuctionState(itemLink)
 	else
 		data = gAtr_ScanDB[itemName]
 		referencePrice = data and data["H"..today]
-		auctionCount = referencePrice and 1
+		auctionCount = referencePrice and -1 or nil
 	end
 
 	local previousPrice
-	for history = today-1, today-11, -1 do
+	for history = today-1, today - AUCTIONATOR_DB_MAXHIST_DAYS, -1 do
 		previousPrice = data and data["H"..history]
 		if previousPrice then
 			break
 		end
 	end
 
-	return previousPrice, referencePrice, auctionCount and auctionCount > 0 or nil, isFreshData
+	return previousPrice, referencePrice, auctionCount, isFreshData
 end
 
 function addon:Auctionator_UpdateTooltip(tooltip, available, itemPrice, changeIndicator, append)
@@ -100,7 +100,7 @@ function addon:Auctionator_UpdateTooltip(tooltip, available, itemPrice, changeIn
 	end
 
 	if found then
-		local newTextRight = "|cFF"..(available and "FFFFFF" or "FF0000")
+		local newTextRight = "|cFF"..(available ~= 0 and "FFFFFF" or "FF0000")
 			.. (itemPrice and gAtrZC.priceToMoneyString(itemPrice) or ZT("unknown")) .. "|r"
 			.. changeIndicator
 
@@ -143,7 +143,7 @@ function addon:UpdateAuctionatorTooltip(tip, itemLink)
 
 	-- historyData = the price we asked for this item the last time
 	-- prevPrice = the price seen in previous scans
-	local prevPrice, price, currentlyAvailable, freshData = addon:Auctionator_GetAuctionState(itemLink)
+	local prevPrice, price, numAvailable, freshData = addon:Auctionator_GetAuctionState(itemLink)
 	local itemPrice = price or Atr_GetAuctionBuyout(itemLink)
 	local historyData = addon:Auctionator_GetCompareValue(itemLink)
 
@@ -169,15 +169,17 @@ function addon:UpdateAuctionatorTooltip(tip, itemLink)
 		end
 	end
 
-	addon:Auctionator_UpdateTooltip(tip, currentlyAvailable, itemPrice, changeIndicator, append)
+	addon:Auctionator_UpdateTooltip(tip, numAvailable, itemPrice, changeIndicator, append)
 end
 
 -- bunch of tooltip hooks
 hooksecurefunc(GameTooltip, "SetMerchantItem", function(tip, merchantID)
-	local itemLink = GetMerchantItemLink(merchantID)
-	local _, _, _, num = GetMerchantItemInfo(merchantID)
-	Atr_ShowTipWithPricing(tip, itemLink, num)
-	AuctionatorMiniFeatures:UpdateAuctionatorTooltip(tip, itemLink)
+	if Atr_ShowTipWithPricing then
+		local itemLink = GetMerchantItemLink(merchantID)
+		local _, _, _, num = GetMerchantItemInfo(merchantID)
+		Atr_ShowTipWithPricing(tip, itemLink, num)
+		AuctionatorMiniFeatures:UpdateAuctionatorTooltip(tip, itemLink)
+	end
 end)
 
 hooksecurefunc(GameTooltip, "SetBagItem", function(tip, bag, slot)
