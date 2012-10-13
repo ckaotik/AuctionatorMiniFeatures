@@ -45,15 +45,197 @@ data.yours			= ownerCode == "y";
 data.yours			= ownerCode == "y";
 data.owner			= sd.owner --[CKAOTIK]
 
+4) To better integrate Battle Pets into the UI, you need to change Auctionator.lua line ~112:
+
+local gCurrentPane;
+
+	to this new code:
+
+-- local gCurrentPane;
+
 ]]
 
--- "_"..sd.stackSize.."_"..sd.buyoutPrice.."_"..ownerCode..dataType
 local showGlobalPriceChanges = true
 local showPlayerPriceChanges = true
 
 
+-- battle pet fixes
+local orig_Atr_GetBondType = Atr_GetBondType
+Atr_GetBondType = function(itemID)
+	if type(itemID) ~= "number" then
+		return ATR_BINDTYPE_UNKNOWN
+	end
+	return orig_Atr_GetBondType(itemID)
+end
+local orig_Atr_SetTextureButton = Atr_SetTextureButton
+Atr_SetTextureButton = function(elementName, count, itemlink)
+	local texture = GetItemIcon (itemlink)
+	if texture then
+		Atr_SetTextureButtonByTexture(elementName, count, texture)
+		return
+	end
+
+	if not itemLink and not gCurrentPane then
+		orig_Atr_SetTextureButton(elementName, count, itemLink)
+		return
+	end
+	itemLink = itemLink or gCurrentPane.activeScan.itemLink
+	if not texture and itemLink and string.find(itemLink, "Hbattlepet") then
+		local itemData = gAtrZC.ItemIDfromLink(itemLink)
+		local speciesID = strsplit(":", itemData)
+		_, texture = C_PetJournal.GetPetInfoBySpeciesID(speciesID)
+	end
+	Atr_SetTextureButtonByTexture(elementName, count, texture)
+end
+AtrScan.UpdateItemLink = function(self, itemLink)
+	if (itemLink and self.itemLink == nil) then
+		local _, _, quality, iLevel, _, sType, sSubType = GetItemInfo(itemLink);
+		if string.find(itemLink, "Hbattlepet") then
+			local itemData = gAtrZC.ItemIDfromLink(itemLink)
+			local speciesID, level, qty = strsplit(":", itemData)
+			iLevel = tonumber(level)
+			quality = tonumber(qty)
+
+			_, _, sSubType = C_PetJournal.GetPetInfoBySpeciesID(speciesID)
+			sSubType = select(sSubType, GetAuctionItemSubClasses(11))
+			sType = select(11, GetAuctionItemClasses())
+		end
+
+		self.itemLink 		= itemLink;
+		self.itemQuality	= quality;
+		self.itemLevel		= iLevel;
+		self.itemClass		= Atr_ItemType2AuctionClass (sType);
+		self.itemSubclass	= Atr_SubType2AuctionSubclass (self.itemClass, sSubType);
+		self.itemTextColor = { 0.75, 0.75, 0.75 };
+
+		if (quality == 0)	then	self.itemTextColor = { 0.6, 0.6, 0.6 };	end
+		if (quality == 1)	then	self.itemTextColor = { 1.0, 1.0, 1.0 };	end
+		if (quality == 2)	then	self.itemTextColor = { 0.2, 1.0, 0.0 };	end
+		if (quality == 3)	then	self.itemTextColor = { 0.0, 0.5, 1.0 };	end
+		if (quality == 4)	then	self.itemTextColor = { 0.7, 0.3, 1.0 };	end
+	end
+end
+local orig_auctionator_ChatEdit_InsertLink = auctionator_ChatEdit_InsertLink
+auctionator_ChatEdit_InsertLink = function(text)
+	if (text and AuctionFrame:IsShown() and IsShiftKeyDown() and Atr_IsTabSelected(BUY_TAB)) then
+		local item;
+		if strfind(text, "battlepet", 1, true) then
+			local itemData = gAtrZC.ItemIDfromLink(text)
+			local speciesID = strsplit(":", itemData)
+			item = C_PetJournal.GetPetInfoBySpeciesID(speciesID)
+		end
+		if item then
+			Atr_SetSearchText(item);
+			Atr_Search_Onclick();
+			return true;
+		end
+	end
+	return orig_auctionator_ChatEdit_InsertLink(text);
+end
+Atr_GetSellItemInfo = function()
+	local auctionItemName, auctionTexture, auctionCount = GetAuctionSellItemInfo()
+	local auctionItemLink = nil
+	if (auctionItemName == nil) then
+		auctionItemName = ""
+		auctionCount	= 0
+	else
+		local hasCooldown, speciesID, level, breedQuality, maxHealth, power, speed, name = AtrScanningTooltip:SetAuctionSellItem()
+		if (speciesID and speciesID > 0) then
+			auctionItemLink = string.format("%s\124Hbattlepet:%d:%d:%d:%d:%d:%d:%d\124h[%s]\124h\124r", ITEM_QUALITY_COLORS[breedQuality].hex, speciesID, level, breedQuality, maxHealth, power, speed, name, auctionItemName)
+		else
+			local name;
+			name, auctionItemLink = AtrScanningTooltip:GetItem();
+			if (auctionItemLink == nil) then
+				return "",0,nil;
+			end
+		end
+	end
+	return auctionItemName, auctionCount, auctionItemLink;
+end
+Atr_GetAuctionBuyout = function(item)
+	local sellval
+	if (type(item) == "string") then
+		sellval = Atr_GetAuctionPrice(item);
+	end
+	if (sellval == nil) then
+		local name = GetItemInfo(item);
+		if strfind(item, "battlepet", 1, true) then
+			local itemData = gAtrZC.ItemIDfromLink(item)
+			local speciesID = strsplit(":", itemData)
+			name = C_PetJournal.GetPetInfoBySpeciesID(speciesID)
+		end
+		if (name) then sellval = Atr_GetAuctionPrice(name) end
+	end
+	return sellval or (origGetAuctionBuyout and origGetAuctionBuyout(item)) or nil
+end
+gAtrZC.ItemIDfromLink = function(itemLink)
+	if not itemLink then return 0,0,0 end
+	local found, _, linkType, itemString = string.find(itemLink, "^|c%x+|H(.-):(.+)|h%[.*%]")
+	if linkType ~= "item" then return itemString end
+	local itemId, _, _, _, _, _, suffixId, uniqueId = strsplit(":", itemString)
+	return tonumber(itemId), tonumber(suffixId), tonumber(uniqueId);
+end
+
+local function ShowButtonTooltip(anchor, itemLink, num)
+	if itemLink and string.find(itemLink, "Hbattlepet") then
+		local itemData = gAtrZC.ItemIDfromLink(itemLink)
+		local data = { strsplit(":", itemData) }
+		for k,v in pairs(data) do
+			data[k] = tonumber(v)
+		end
+		-- FloatingBattlePet_Show(unpack(data))
+		BattlePetToolTip_Show(unpack(data))
+	elseif itemLink then
+		GameTooltip:SetOwner(anchor, "ANCHOR_RIGHT", -280)
+		GameTooltip:SetHyperlink(itemLink, num or 1)
+	end
+end
+local function HideButtonTooltip()
+	GameTooltip:Hide();
+	-- FloatingBattlePetTooltip:Hide();
+	BattlePetTooltip:Hide()
+end
+
+Atr_ShowLineTooltip = function(self)
+	ShowButtonTooltip(self, self.itemLink)
+end
+Atr_HideLineTooltip = function()
+	HideButtonTooltip()
+end
+local orig_Atr_ShowRecTooltip = Atr_ShowRecTooltip
+Atr_ShowRecTooltip = function()
+	if not gCurrentPane then orig_Atr_ShowRecTooltip() return end
+
+	local link = gCurrentPane.activeScan.itemLink;
+	local num  = Atr_StackSize();
+	if (not link) then
+		link = gJustPosted.ItemLink;
+		num  = gJustPosted.StackSize;
+	end
+	if (link) then
+		if (num < 1) then num = 1; end;
+		gCurrentPane.tooltipvisible = true;
+		ShowButtonTooltip(Atr_RecommendItem_Tex, link, num)
+	end
+end
+local orig_Atr_HideRecTooltip = Atr_HideRecTooltip
+Atr_HideRecTooltip = function()
+	if not gCurrentPane then orig_Atr_HideRecTooltip() return end
+
+	gCurrentPane.tooltipvisible = nil;
+	HideButtonTooltip()
+end
+
+-- /////////////
+
 function addon:Auctionator_GetAuctionState(itemLink)
 	local itemName = GetItemInfo(itemLink)
+	if string.find(itemLink, "Hbattlepet") then
+		local itemData = gAtrZC.ItemIDfromLink(itemLink)
+		local speciesID = strsplit(":", itemData)
+		itemName = C_PetJournal.GetPetInfoBySpeciesID(speciesID)
+	end
+
 	local today = Atr_GetScanDay_Today()
 
 	local auctionCount, referencePrice, isFreshData
@@ -169,7 +351,13 @@ function addon:UpdateAuctionatorTooltip(tip, itemLink)
 		end
 	end
 
-	addon:Auctionator_UpdateTooltip(tip, numAvailable, itemPrice, changeIndicator, append)
+	if tip.AddLine then
+		addon:Auctionator_UpdateTooltip(tip, numAvailable, itemPrice, changeIndicator, append)
+	elseif tip.value then
+		tip.value:SetText("|cFF"..(available ~= 0 and "FFFFFF" or "FF0000")
+			.. (itemPrice and gAtrZC.priceToMoneyString(itemPrice) or ZT("unknown")) .. "|r"
+			.. changeIndicator)
+	end
 end
 
 -- bunch of tooltip hooks
@@ -248,5 +436,19 @@ hooksecurefunc (GameTooltip, "SetHyperlink", function (tip, itemstring, num)
 end)
 hooksecurefunc (ItemRefTooltip, "SetHyperlink", function (tip, itemstring)
 	local name, link = GetItemInfo (itemstring)
+	addon:UpdateAuctionatorTooltip(tip, link)
+end)
+hooksecurefunc("BattlePetTooltipTemplate_SetBattlePet", function(tip, data)
+	local link = string.format("%s\124Hbattlepet:%d:%d:%d:%d:%d:%d:%d\124h[%s]\124h\124r", ITEM_QUALITY_COLORS[data.breedQuality].hex, data.speciesID, data.level, data.breedQuality, data.maxHealth, data.power, data.speed, data.name, data.name)
+
+	if not tip.value then
+		local value = tip:CreateFontString(nil, "ARTWORK", "GameTooltipText")
+		tip.value = value
+	end
+	if tip:GetName() == "FloatingBattlePetTooltip" then
+		tip.value:SetPoint("BOTTOMRIGHT", tip, "BOTTOMRIGHT", -12, 36)
+	else
+		tip.value:SetPoint("BOTTOMRIGHT", tip, "BOTTOMRIGHT", -12, 8)
+	end
 	addon:UpdateAuctionatorTooltip(tip, link)
 end)
