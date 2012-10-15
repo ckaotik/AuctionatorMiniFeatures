@@ -247,13 +247,13 @@ function addon:Auctionator_GetAuctionState(itemLink)
 		isFreshData = true
 	else
 		data = gAtr_ScanDB[itemName]
-		referencePrice = data and data["H"..today]
+		referencePrice = data and (data["L"..today] or data["H"..today])
 		auctionCount = referencePrice and -1 or nil
 	end
 
 	local previousPrice
 	for history = today-1, today - AUCTIONATOR_DB_MAXHIST_DAYS, -1 do
-		previousPrice = data and data["H"..history]
+		previousPrice = data and (data["L"..today] or data["H"..history])
 		if previousPrice then
 			break
 		end
@@ -282,7 +282,7 @@ function addon:Auctionator_UpdateTooltip(tooltip, available, itemPrice, changeIn
 	end
 
 	if found then
-		local newTextRight = "|cFF"..(available ~= 0 and "FFFFFF" or "FF0000")
+		local newTextRight = "|cFF"..((available and available ~= 0) and "FFFFFF" or "FF0000")
 			.. (itemPrice and gAtrZC.priceToMoneyString(itemPrice) or ZT("unknown")) .. "|r"
 			.. changeIndicator
 
@@ -315,6 +315,7 @@ function addon:Auctionator_GetCompareValue(itemLink)
 	end
 end
 
+local up, down = " |TInterface\\BUTTONS\\Arrow-Up-Up:0|t", " |TInterface\\BUTTONS\\Arrow-Down-Up:0|t"
 function addon:UpdateAuctionatorTooltip(tip, itemLink)
 	if not (tip and itemLink) or AUCTIONATOR_A_TIPS ~= 1 then return end
 
@@ -332,7 +333,6 @@ function addon:UpdateAuctionatorTooltip(tip, itemLink)
 	if not itemPrice then return end
 
 	local changeIndicator = ""
-	local up, down = " |TInterface\\BUTTONS\\Arrow-Up-Up:0|t", " |TInterface\\BUTTONS\\Arrow-Down-Up:0|t"
 	-- global pricing changes
 	if showGlobalPriceChanges then
 		if prevPrice and itemPrice > prevPrice then
@@ -354,7 +354,7 @@ function addon:UpdateAuctionatorTooltip(tip, itemLink)
 	if tip.AddLine then
 		addon:Auctionator_UpdateTooltip(tip, numAvailable, itemPrice, changeIndicator, append)
 	elseif tip.value then
-		tip.value:SetText("|cFF"..(available ~= 0 and "FFFFFF" or "FF0000")
+		tip.value:SetText("|cFF"..((numAvailable and numAvailable ~= 0) and "FFFFFF" or "FF0000")
 			.. (itemPrice and gAtrZC.priceToMoneyString(itemPrice) or ZT("unknown")) .. "|r"
 			.. changeIndicator)
 	end
