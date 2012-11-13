@@ -1,7 +1,7 @@
 ## Interface: 50001
 ## Author: ckaotik
 ## Title: Auctionator MiniFeatures
-## Version: 5.0v3
+## Version: @project-version@
 ## OptionalDeps:
 ## RequiredDeps: Auctionator
 
