@@ -81,9 +81,8 @@ Atr_SetTextureButton = function(elementName, count, itemlink)
 	end
 	itemLink = itemLink or gCurrentPane.activeScan.itemLink
 	if not texture and itemLink and string.find(itemLink, "Hbattlepet") then
-		local itemData = gAtrZC.ItemIDfromLink(itemLink)
-		local speciesID = strsplit(":", itemData)
-		_, texture = C_PetJournal.GetPetInfoBySpeciesID(speciesID)
+		local speciesID = gAtrZC.ItemIDfromLink(itemLink)
+		_, texture = C_PetJournal.GetPetInfoBySpeciesID(-1*speciesID)
 	end
 	Atr_SetTextureButtonByTexture(elementName, count, texture)
 end
@@ -91,12 +90,11 @@ AtrScan.UpdateItemLink = function(self, itemLink)
 	if (itemLink and self.itemLink == nil) then
 		local _, _, quality, iLevel, _, sType, sSubType = GetItemInfo(itemLink);
 		if string.find(itemLink, "Hbattlepet") then
-			local itemData = gAtrZC.ItemIDfromLink(itemLink)
-			local speciesID, level, qty = strsplit(":", itemData)
-			iLevel = tonumber(level)
-			quality = tonumber(qty)
+			local speciesID, itemData = gAtrZC.ItemIDfromLink(itemLink)
+			iLevel = tonumber(string.sub(itemData, 1, 2))
+			quality = tonumber(string.sub(itemData, 3, 4))
 
-			_, _, sSubType = C_PetJournal.GetPetInfoBySpeciesID(speciesID)
+			_, _, sSubType = C_PetJournal.GetPetInfoBySpeciesID(-1*speciesID)
 			sSubType = select(sSubType, GetAuctionItemSubClasses(11))
 			sType = select(11, GetAuctionItemClasses())
 		end
@@ -120,9 +118,8 @@ auctionator_ChatEdit_InsertLink = function(text)
 	if (text and AuctionFrame:IsShown() and IsShiftKeyDown() and Atr_IsTabSelected(BUY_TAB)) then
 		local item;
 		if strfind(text, "battlepet", 1, true) then
-			local itemData = gAtrZC.ItemIDfromLink(text)
-			local speciesID = strsplit(":", itemData)
-			item = C_PetJournal.GetPetInfoBySpeciesID(speciesID)
+			local speciesID = gAtrZC.ItemIDfromLink(text)
+			item = C_PetJournal.GetPetInfoBySpeciesID(-1*speciesID)
 		end
 		if item then
 			Atr_SetSearchText(item);
@@ -140,7 +137,7 @@ Atr_GetSellItemInfo = function()
 		auctionCount	= 0
 	else
 		local hasCooldown, speciesID, level, breedQuality, maxHealth, power, speed, name = AtrScanningTooltip:SetAuctionSellItem()
-		if (speciesID and speciesID > 0) then
+		if (-1*speciesID and speciesID > 0) then
 			auctionItemLink = string.format("%s\124Hbattlepet:%d:%d:%d:%d:%d:%d:%d\124h[%s]\124h\124r", ITEM_QUALITY_COLORS[breedQuality].hex, speciesID, level, breedQuality, maxHealth, power, speed, name, auctionItemName)
 		else
 			local name;
@@ -160,9 +157,8 @@ Atr_GetAuctionBuyout = function(item)
 	if (sellval == nil) then
 		local name = GetItemInfo(item);
 		if strfind(item, "battlepet", 1, true) then
-			local itemData = gAtrZC.ItemIDfromLink(item)
-			local speciesID = strsplit(":", itemData)
-			name = C_PetJournal.GetPetInfoBySpeciesID(speciesID)
+			local speciesID = gAtrZC.ItemIDfromLink(item)
+			name = C_PetJournal.GetPetInfoBySpeciesID(-1*speciesID)
 		end
 		if (name) then sellval = Atr_GetAuctionPrice(name) end
 	end
@@ -171,14 +167,45 @@ end
 gAtrZC.ItemIDfromLink = function(itemLink)
 	if not itemLink then return 0,0,0 end
 	local found, _, linkType, itemString = string.find(itemLink, "^|c%x+|H(.-):(.+)|h%[.*%]")
-	if linkType ~= "item" then return itemString end
-	local itemId, _, _, _, _, _, suffixId, uniqueId = strsplit(":", itemString)
-	return tonumber(itemId), tonumber(suffixId), tonumber(uniqueId);
+	local itemID, suffixID, uniqueID, level, quality
+	if linkType == "item" then
+		itemID, _, _, _, _, _, suffixID, uniqueID = strsplit(":", itemString)
+		uniqueID = tonumber(uniqueID)
+	else
+		itemID, level, quality = strsplit(':', itemString)
+		itemID = -1 * itemID
+		suffixID = string.format("%02d%02d", level, quality)
+		uniqueID = itemString
+	end
+	return tonumber(itemID), tonumber(suffixID), uniqueID;
+end
+Atr_GetNumItemInBags = function(theItemName)
+	local numItems = 0;
+	local itemLink, bagID, slotID;
+	for bagID = 0, NUM_BAG_SLOTS do
+		for slotID = 1, GetContainerNumSlots(bagID) or 0 do
+			itemLink = GetContainerItemLink(bagID, slotID)
+			if itemLink then
+				if string.find(itemLink, "Hbattlepet") then
+					local speciesID = gAtrZC.ItemIDfromLink(itemLink)
+					itemName = C_PetJournal.GetPetInfoBySpeciesID(-1*speciesID)
+				else
+					itemName = GetItemInfo(itemLink)
+				end
+
+				local texture, itemCount = GetContainerItemInfo(bagID, slotID)
+				if (itemName == theItemName) then
+					numItems = numItems + itemCount
+				end
+			end
+		end
+	end
+	return numItems;
 end
 
 local function ShowButtonTooltip(anchor, itemLink, num)
 	if itemLink and string.find(itemLink, "Hbattlepet") then
-		local itemData = gAtrZC.ItemIDfromLink(itemLink)
+		local _, _, itemData = gAtrZC.ItemIDfromLink(itemLink)
 		local data = { strsplit(":", itemData) }
 		for k,v in pairs(data) do
 			data[k] = tonumber(v)
@@ -231,9 +258,8 @@ end
 function addon:Auctionator_GetAuctionState(itemLink)
 	local itemName = GetItemInfo(itemLink)
 	if string.find(itemLink, "Hbattlepet") then
-		local itemData = gAtrZC.ItemIDfromLink(itemLink)
-		local speciesID = strsplit(":", itemData)
-		itemName = C_PetJournal.GetPetInfoBySpeciesID(speciesID)
+		local speciesID = gAtrZC.ItemIDfromLink(itemLink)
+		itemName = C_PetJournal.GetPetInfoBySpeciesID(-1*speciesID)
 	end
 
 	local today = Atr_GetScanDay_Today()
