@@ -137,7 +137,7 @@ Atr_GetSellItemInfo = function()
 		auctionCount	= 0
 	else
 		local hasCooldown, speciesID, level, breedQuality, maxHealth, power, speed, name = AtrScanningTooltip:SetAuctionSellItem()
-		if (-1*speciesID and speciesID > 0) then
+		if (speciesID and speciesID > 0) then
 			auctionItemLink = string.format("%s\124Hbattlepet:%d:%d:%d:%d:%d:%d:%d\124h[%s]\124h\124r", ITEM_QUALITY_COLORS[breedQuality].hex, speciesID, level, breedQuality, maxHealth, power, speed, name, auctionItemName)
 		else
 			local name;
@@ -210,7 +210,7 @@ local function ShowButtonTooltip(anchor, itemLink, num)
 		for k,v in pairs(data) do
 			data[k] = tonumber(v)
 		end
-		-- FloatingBattlePet_Show(unpack(data))
+		GameTooltip:SetOwner(anchor, "ANCHOR_RIGHT", -280)
 		BattlePetToolTip_Show(unpack(data))
 	elseif itemLink then
 		GameTooltip:SetOwner(anchor, "ANCHOR_RIGHT", -280)
@@ -219,7 +219,6 @@ local function ShowButtonTooltip(anchor, itemLink, num)
 end
 local function HideButtonTooltip()
 	GameTooltip:Hide();
-	-- FloatingBattlePetTooltip:Hide();
 	BattlePetTooltip:Hide()
 end
 
