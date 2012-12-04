@@ -189,7 +189,8 @@ hooksecurefunc(AtrScan, "CondenseAndSort", function(self)
 	for i, sd in ipairs (self.scanData) do
 		for k = 1, self.numMatches do
 			sorted = self.sortedData[k]
-			if (not sorted.owner or not sorted.owner:find(sd.owner))
+			if sd.owner
+				and (not sorted.owner or not sorted.owner:find(sd.owner))
 				and sorted.stackSize == sd.stackSize and sorted.buyoutPrice == sd.buyoutPrice then
 				sorted.owner = (sorted.owner and sorted.owner..", " or "") .. sd.owner
 			end
@@ -208,7 +209,7 @@ hooksecurefunc("Atr_ShowCurrentAuctions", function()
 		rowText = _G["AuctionatorEntry"..i.."_EntryText"]
 
 		data = scan.sortedData[ row:GetID() ]
-		if data then
+		if data and data.owner then
 			textWidth = rowText:GetStringWidth()
 			spacing = textWidth < columnWidth and "|T"..""..":1:"..(columnWidth-textWidth).."|t" or ""
 			lineText = rowText:GetText()
