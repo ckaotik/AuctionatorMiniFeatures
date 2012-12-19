@@ -148,7 +148,8 @@ function addon:SetToolipPriceInfo(tip, priceText)
 		if not tip.value then
 			tip.value = tip:CreateFontString(nil, "ARTWORK", "GameTooltipText")
 		end
-		tip.value:SetPoint("BOTTOMRIGHT", tip, "BOTTOMRIGHT", -12, (tip:GetName() == "FloatingBattlePetTooltip") and 36 or 8)
+		-- tip.value:SetPoint("BOTTOMRIGHT", tip, "BOTTOMRIGHT", -12, (tip:GetName() == "FloatingBattlePetTooltip") and 36 or 8)
+		tip.value:SetPoint("TOPRIGHT", tip.PetTypeTexture, "BOTTOMRIGHT", -4, -16)
 		tip.value:SetText(priceText)
 	end
 end
