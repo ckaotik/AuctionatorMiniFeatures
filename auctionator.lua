@@ -30,12 +30,10 @@ function Atr_GetAuctionBuyout(item)
 end
 
 hooksecurefunc("Atr_SetTextureButton", function(elementName, count, itemLink)
-	local texture = GetItemIcon(itemLink)
-	if texture then return end
-
+	if not itemLink or GetItemIcon(itemLink) then return end
 	local speciesID = gAtrZC.ItemIDfromLink(itemLink)
 		  speciesID = speciesID and tonumber( string.sub(speciesID, 4) )
-	_, texture = C_PetJournal.GetPetInfoBySpeciesID(speciesID)
+	local _, texture = C_PetJournal.GetPetInfoBySpeciesID(speciesID)
 
 	Atr_SetTextureButtonByTexture (elementName, count, texture)
 end)
