@@ -44,8 +44,9 @@ function addon:GetAuctionState(itemLink)
 	if not itemName then
 		local speciesID = gAtrZC.ItemIDfromLink(itemLink)
 			  speciesID = speciesID and tonumber( string.sub(speciesID, 4) )
-		itemName = C_PetJournal.GetPetInfoBySpeciesID(-1*speciesID)
+		itemName = speciesID and C_PetJournal.GetPetInfoBySpeciesID(-1*speciesID)
 	end
+	if not itemName then return end
 
 	local today = Atr_GetScanDay_Today()
 
@@ -139,6 +140,7 @@ end
 
 --[[ 	Data Display	 ]]--
 function addon:SetToolipPriceInfo(tip, priceText)
+	if not priceText or not tip then return end
 	if tip.AddLine then
 		local aucPriceLine = tip:NumLines()
 		_G[tip:GetName() .. "TextRight"..aucPriceLine]:SetText(priceText)
