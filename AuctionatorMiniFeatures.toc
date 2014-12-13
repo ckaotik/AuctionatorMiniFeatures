@@ -1,9 +1,8 @@
-## Interface: 50400
+## Interface: 60000
 ## Author: ckaotik
 ## Title: Auctionator MiniFeatures
 ## Version: @project-version@
 ## OptionalDeps:
 ## RequiredDeps: Auctionator
 
-auctionator.lua
-data.lua
+AuctionatorMiniFeatures.lua
