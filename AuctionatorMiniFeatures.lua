@@ -50,7 +50,7 @@ function addon:GetAuctionState(itemLink)
 	local itemName = GetItemInfo(itemLink)
 	if not itemName then
 		-- probably a battle pet
-		local speciesID = gAtrZC.ItemIDfromLink(itemLink)
+		local speciesID = gAtrZC.RawItemIDfromLink(itemLink)
 			  speciesID = speciesID and speciesID:sub(4)
 		itemName = speciesID and C_PetJournal.GetPetInfoBySpeciesID(-1*speciesID)
 	end
@@ -160,7 +160,7 @@ end
 hooksecurefunc("Atr_STWP_AddAuctionInfo", function(tip, xstring, link, auctionPrice)
 	if AUCTIONATOR_A_TIPS ~= 1 then return end
 
-	local itemID = gAtrZC.ItemIDfromLink(link)
+	local itemID = gAtrZC.RawItemIDfromLink(link)
 	local bondtype = Atr_GetBondType(itemID*1)
 
 	if (bondtype == ATR_CAN_BE_AUCTIONED or bondtype == ATR_BINDTYPE_UNKNOWN) and xstring == "" then
