@@ -49,10 +49,9 @@ end
 function addon:GetAuctionState(itemLink)
 	local itemName = GetItemInfo(itemLink)
 	if not itemName then
-		-- probably a battle pet
-		local speciesID = gAtrZC.RawItemIDfromLink(itemLink)
-			  speciesID = speciesID and speciesID:sub(4)
-		itemName = speciesID and C_PetJournal.GetPetInfoBySpeciesID(-1*speciesID)
+		local speciesID = itemLink:match("battlepet:(%d+)")
+		-- probably a battle pet, API works with number or string
+		itemName = speciesID and C_PetJournal.GetPetInfoBySpeciesID(speciesID)
 	end
 	if not itemName then return end
 
