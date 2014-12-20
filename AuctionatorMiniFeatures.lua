@@ -4,8 +4,8 @@ _G[addonName] = addon
 local showGlobalPriceChanges = true
 local showPlayerPriceChanges = true
 
--- GLOBALS: _G, AuctionatorMiniFeatures, ITEM_QUALITY_COLORS, AUCTION_CREATOR, UNKNOWN, C_PetJournal, gAtrZC, gAtr_ScanDB, Atr_Col3_Heading, AUCTIONATOR_A_TIPS, ATR_BINDTYPE_UNKNOWN, ATR_CAN_BE_AUCTIONED, AUCTIONATOR_DB_MAXHIST_DAYS, AUCTIONATOR_PRICING_HISTORY
--- GLOBALS: GetMerchantItemLink, GetMerchantItemInfo, GetItemInfo, GetItemIcon, Atr_FindScan, Atr_GetScanDay_Today, Atr_GetBondType, Atr_GetCurrentPane, Atr_GetAuctionBuyout, Atr_SetTextureButton, Atr_HasHistoricalData, Atr_ShowTipWithPricing, Atr_SortHistoryData, ParseHist, Atr_SetTextureButtonByTexture
+-- GLOBALS: _G, ITEM_QUALITY_COLORS, AUCTION_CREATOR, UNKNOWN, C_PetJournal, gAtrZC, gAtr_ScanDB, Atr_Col3_Heading, AUCTIONATOR_A_TIPS, ATR_BINDTYPE_UNKNOWN, ATR_CAN_BE_AUCTIONED, AUCTIONATOR_DB_MAXHIST_DAYS, AUCTIONATOR_PRICING_HISTORY
+-- GLOBALS: GetItemInfo, Atr_FindScan, Atr_GetScanDay_Today, Atr_GetBondType, Atr_GetCurrentPane, Atr_GetAuctionBuyout, ParseHist, AtrReadBindText
 -- GLOBALS: strjoin, type, table, wipe, pairs, select, tContains, time
 
 --[[ 	BattlePets	 ]]--
@@ -159,10 +159,11 @@ end
 hooksecurefunc("Atr_STWP_AddAuctionInfo", function(tip, xstring, link, auctionPrice)
 	if AUCTIONATOR_A_TIPS ~= 1 then return end
 
-	local itemID = gAtrZC.RawItemIDfromLink(link)
-	local bondtype = Atr_GetBondType(itemID*1)
+	local itemID = link:match("item:(%d+)")
+	local bondtype = itemID and Atr_GetBondType(itemID*1) or ATR_BINDTYPE_UNKNOWN
 
 	if (bondtype == ATR_CAN_BE_AUCTIONED or bondtype == ATR_BINDTYPE_UNKNOWN) and xstring == "" then
+		-- only apply to single item values (not stack prices)
 		local priceText, hasData = addon:GetItemPriceInfo(link)
 		if hasData then
 			addon:SetToolipPriceInfo(tip, priceText)
