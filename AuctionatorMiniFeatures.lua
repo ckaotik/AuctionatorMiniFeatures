@@ -31,7 +31,8 @@ function Atr_GetAuctionBuyout(item)
 	return orig_Atr_GetAuctionBuyout(item)
 end
 
--- item binding scanning fails on items with attributes such as "heroic"
+-- item binding scanning fails on items with multiple extra lines
+-- such as "heroic", "transmogrified", ...
 local orig_AtrReadBindText = AtrReadBindText
 function AtrReadBindText(itemID, txt)
 	local binding = orig_AtrReadBindText(itemID, txt)
@@ -56,7 +57,7 @@ function addon:GetAuctionState(itemLink)
 	if not itemName then return end
 
 	local auctionCount, referencePrice, isFreshData
-	local data = Atr_FindScan(gAtrZC.ItemIDStrfromLink(itemLink), itemName)
+	local data = Atr_FindScan(gAtrZC.RawItemIDfromLink(itemLink), itemName)
 
 	-- referencePrice: price we discovered in our latest single item scan since logon
 	if data and data.whenScanned ~= 0 then
