@@ -1,0 +1,10 @@
+package-as: AuctionatorMiniFeatures
+
+required-dependencies:
+ - auctionator
+
+ignore:
+ - .gitignore
+ - .pkgmeta
+ - json.lua
+ - dataminer.lua
